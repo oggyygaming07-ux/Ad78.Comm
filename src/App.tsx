@@ -4,6 +4,7 @@ import { AuthScreenMode, AuthViews } from './components/AuthViews';
 import { AviatorGame } from './components/AviatorGame';
 import { BrandLogo } from './components/BrandLogo';
 import { HomeDashboard } from './components/HomeDashboard';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { ResultModal, ResultModalData } from './components/ResultModal';
 import { SupportCenter } from './components/SupportCenter';
 import { MenuPage, WalletAndMenu } from './components/WalletAndMenu';
@@ -388,6 +389,7 @@ function UserApp() {
       )}
 
       <ResultModal data={resultModal} onClose={() => setResultModal(null)} />
+      <OfflineIndicator />
     </>
   );
 }

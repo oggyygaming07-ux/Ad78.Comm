@@ -6,6 +6,11 @@ on:
       - main
       - master
   workflow_dispatch:
+    inputs:
+      app_url:
+        description: "Public Live URL of your deployed AD78 app (e.g. https://ad78.onrender.com or Cloud Run URL)"
+        required: false
+        default: ""
 
 jobs:
   build-apk:
@@ -37,9 +42,22 @@ jobs:
           npm run build
 
       - name: Generate Android Capacitor project
+        env:
+          CUSTOM_APP_URL: ${{ github.event.inputs.app_url }}
         run: |
           npm install --no-save --legacy-peer-deps @capacitor/core@7 @capacitor/cli@7 @capacitor/android@7
           cp android-apk/capacitor.config.json ./capacitor.config.json
+          if [ -n "$CUSTOM_APP_URL" ]; then
+            node -e '
+              const fs = require("fs");
+              const cfg = JSON.parse(fs.readFileSync("./capacitor.config.json", "utf8"));
+              const u = new URL(process.env.CUSTOM_APP_URL);
+              cfg.server = cfg.server || {};
+              cfg.server.url = u.origin;
+              cfg.server.allowNavigation = [u.host, "*.run.app", "*.onrender.com", "*.up.railway.app", "accounts.google.com", "*.google.com"];
+              fs.writeFileSync("./capacitor.config.json", JSON.stringify(cfg, null, 2));
+            '
+          fi
           rm -rf android
           npx cap add android
 

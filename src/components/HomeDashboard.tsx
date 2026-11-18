@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { AviatorState, PlatformConfig, UserProfile } from '../types';
 import { BrandLogo } from './BrandLogo';
+import { PWAInstallButton } from './PWAInstallButton';
 import { MenuPage } from './WalletAndMenu';
 
 interface HomeDashboardProps {
@@ -47,7 +48,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           <BrandLogo size="sm" />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <PWAInstallButton />
           <button
             onClick={onOpenSupport}
             aria-label="24x7 Support"

@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: ad78-app
+    runtime: node
+    plan: free
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    startCommand: NODE_ENV=production node server.ts
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_PASSWORD
+        value: admin786
