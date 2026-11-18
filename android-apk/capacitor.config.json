@@ -1,0 +1,19 @@
+{
+  "appId": "com.ad78.app",
+  "appName": "AD78",
+  "webDir": "dist",
+  "server": {
+    "url": "https://ais-pre-cpgebu2kudwunuxc4hqwxb-1002767698932.asia-east1.run.app",
+    "cleartext": false,
+    "allowNavigation": [
+      "ais-pre-cpgebu2kudwunuxc4hqwxb-1002767698932.asia-east1.run.app",
+      "*.run.app",
+      "accounts.google.com",
+      "*.google.com"
+    ]
+  },
+  "android": {
+    "backgroundColor": "#09101D",
+    "allowMixedContent": false
+  }
+}

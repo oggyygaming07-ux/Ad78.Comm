@@ -1,0 +1,8 @@
+{
+  "name": "Remix AD79",
+  "description": "AD79 live Wingo color prediction platform with synchronized rounds, UPI and bank wallet management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
