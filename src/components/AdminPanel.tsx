@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   CheckCircle2,
+  Download,
   Headphones,
   Lock,
   Plane,
@@ -8,6 +9,7 @@ import {
   Settings,
   Shield,
   Sliders,
+  Smartphone,
   Unlock,
   Users,
   Wallet,
@@ -82,6 +84,10 @@ export const AdminPanel: React.FC = () => {
     noticeText: '',
   });
   const [cfgLoaded, setCfgLoaded] = useState(false);
+  const [apkAppUrl, setApkAppUrl] = useState(
+    'https://ais-pre-iqaevtxftokwr3kknyycg3-1002767698932.asia-east1.run.app'
+  );
+  const [exportingApk, setExportingApk] = useState(false);
 
   const fetchOverview = useCallback(async () => {
     if (!adminToken) return;
@@ -314,6 +320,31 @@ export const AdminPanel: React.FC = () => {
       fetchOverview();
     } else {
       setStatusMsg('Could not update platform settings.');
+    }
+  };
+
+  const handleDownloadApkExport = async () => {
+    setExportingApk(true);
+    try {
+      const qs = new URLSearchParams({ appUrl: apkAppUrl.trim() }).toString();
+      const res = await fetch(`/api/admin/apk-export.zip?${qs}`, {
+        headers: { 'x-admin-token': adminToken },
+      });
+      if (!res.ok) throw new Error('Export failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'AD78-APK-Export.zip';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setStatusMsg('AD78-APK-Export.zip downloaded! Unzip for Android Studio project & GitHub APK workflow.');
+    } catch {
+      setStatusMsg('Could not export APK package.');
+    } finally {
+      setExportingApk(false);
     }
   };
 
@@ -1048,6 +1079,55 @@ export const AdminPanel: React.FC = () => {
               Push Update to All User Apps
             </button>
           </form>
+        )}
+
+        {/* ANDROID APK EXPORT BUNDLE */}
+        {tab === 'config' && (
+          <div className="rounded-2xl bg-[#0d1424] border border-cyan-500/30 p-5 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-cyan-500/15 text-cyan-300">
+                  <Smartphone className="h-5 w-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">
+                    AD78 Android APK Export Bundle
+                  </h2>
+                  <p className="text-xs text-slate-400">
+                    Package: <span className="text-cyan-300 font-semibold">com.ad78.app</span> · Includes ready-to-build <span className="text-white">AD78-Android-Studio</span> project, Capacitor config &amp; GitHub Actions cloud APK workflow.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-xs">
+              <label className="block font-semibold text-slate-300">
+                App Live Server URL (loaded inside APK)
+              </label>
+              <input
+                type="url"
+                value={apkAppUrl}
+                onChange={(e) => setApkAppUrl(e.target.value)}
+                placeholder="https://ais-pre-iqaevtxftokwr3kknyycg3-1002767698932.asia-east1.run.app"
+                className="w-full rounded-lg bg-[#070b14] border border-slate-700 px-3 py-2 text-white"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleDownloadApkExport}
+                disabled={exportingApk}
+                className="inline-flex items-center gap-2 rounded-xl bg-cyan-400 px-5 py-2.5 text-xs font-bold text-slate-950 hover:bg-cyan-300 disabled:opacity-60 transition"
+              >
+                <Download className="h-4 w-4" />
+                <span>{exportingApk ? 'Preparing ZIP...' : 'Download APK Export (.zip)'}</span>
+              </button>
+              <span className="text-[11px] text-slate-400">
+                Unzip → Open <code className="text-cyan-300">AD78-Android-Studio</code> in Android Studio → Build APK, or push repo to GitHub Actions.
+              </span>
+            </div>
+          </div>
         )}
       </div>
 

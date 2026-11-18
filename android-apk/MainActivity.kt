@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val APP_URL =
-            "https://ais-pre-cpgebu2kudwunuxc4hqwxb-1002767698932.asia-east1.run.app/"
+            "https://ais-pre-iqaevtxftokwr3kknyycg3-1002767698932.asia-east1.run.app/"
     }
 
     private lateinit var webView: WebView

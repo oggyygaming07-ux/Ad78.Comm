@@ -4,6 +4,7 @@ import fs from 'fs';
 import http from 'http';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import JSZip from 'jszip';
 import { WebSocket, WebSocketServer } from 'ws';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1655,6 +1656,97 @@ async function startServer() {
     scheduleSave();
     broadcastWs({ type: 'platform:update', platformConfig: updated });
     return res.json({ platformConfig: updated });
+  });
+
+  app.get('/api/admin/apk-export.zip', async (req, res) => {
+    if (!isAdminAuthed(req)) return res.status(401).json({ error: 'Unauthorized' });
+    try {
+      const defaultAppUrl = 'https://ais-pre-iqaevtxftokwr3kknyycg3-1002767698932.asia-east1.run.app';
+      const rawUrl = String(req.query.appUrl || defaultAppUrl).trim();
+      let cleanUrl = defaultAppUrl;
+      let customHost = 'ais-pre-iqaevtxftokwr3kknyycg3-1002767698932.asia-east1.run.app';
+      try {
+        const parsed = new URL(rawUrl);
+        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+          cleanUrl = parsed.origin;
+          customHost = parsed.host;
+        }
+      } catch {
+        // Fallback to defaultAppUrl
+      }
+
+      const zip = new JSZip();
+      const androidApkDir = path.join(__dirname, 'android-apk');
+
+      const addDirToZip = (dirPath: string, zipPrefix: string) => {
+        if (!fs.existsSync(dirPath)) return;
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dirPath, entry.name);
+          const relPath = zipPrefix ? `${zipPrefix}/${entry.name}` : entry.name;
+          if (entry.isDirectory()) {
+            addDirToZip(fullPath, relPath);
+          } else if (entry.isFile()) {
+            let content = fs.readFileSync(fullPath, 'utf8');
+            content = content.replaceAll(defaultAppUrl, cleanUrl);
+            if (entry.name === 'capacitor.config.json') {
+              try {
+                const cfg = JSON.parse(content);
+                cfg.server = cfg.server || {};
+                cfg.server.url = cleanUrl;
+                const nav = Array.isArray(cfg.server.allowNavigation)
+                  ? cfg.server.allowNavigation
+                  : [];
+                if (!nav.includes(customHost)) {
+                  cfg.server.allowNavigation = [customHost, ...nav];
+                }
+                content = JSON.stringify(cfg, null, 2);
+              } catch {
+                // Keep text content
+              }
+            }
+            zip.file(relPath, content);
+          }
+        }
+      };
+
+      addDirToZip(androidApkDir, 'android-apk');
+
+      const workflowPath = path.join(__dirname, '.github', 'workflows', 'build-apk.yml');
+      if (fs.existsSync(workflowPath)) {
+        zip.file('.github/workflows/build-apk.yml', fs.readFileSync(workflowPath, 'utf8'));
+      }
+
+      zip.file(
+        'EXPORT-INSTRUCTIONS.txt',
+        [
+          'AD78 ANDROID APK EXPORT PACKAGE',
+          '================================',
+          `Configured App URL: ${cleanUrl}`,
+          'Package Name: com.ad78.app',
+          '',
+          'OPTION A (Android Studio - Fastest Local APK Build):',
+          '1. Extract this ZIP file.',
+          '2. Open Android Studio -> Open -> select "android-apk/AD78-Android-Studio".',
+          '3. Wait for Gradle sync, then click Build -> Build Bundle(s) / APK(s) -> Build APK(s).',
+          '4. Find your APK at: app/build/outputs/apk/debug/app-debug.apk',
+          '',
+          'OPTION B (GitHub Actions - Cloud APK Without Android Studio):',
+          '1. Push the full AD78 project (including .github/workflows/build-apk.yml and android-apk/) to GitHub.',
+          '2. Open GitHub -> Actions -> "Build AD78 Android APK" -> Run workflow.',
+          '3. Download the "AD78-APK" artifact and unzip to get AD78.apk.',
+        ].join('\n')
+      );
+
+      const buffer = await zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' });
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', 'attachment; filename="AD78-APK-Export.zip"');
+      res.setHeader('Content-Length', String(buffer.length));
+      return res.send(buffer);
+    } catch (err) {
+      console.error('APK export error:', err);
+      return res.status(500).json({ error: 'Could not generate APK export ZIP.' });
+    }
   });
 
   app.post('/api/admin/user/balance', (req, res) => {
